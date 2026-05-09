@@ -113,7 +113,6 @@ int preAssembler(FILE *file, char *file_name) {
     char first_word[MAX_LINE_LENGTH] = "";
     char second_word[MAX_LINE_LENGTH] = "";
     char new_file_name[MAX_FILE_NAME_LENGTH] = "";
-    char *dot = strrchr(file_name, '.');
 
     int c;
     int macro_param_count;
@@ -136,16 +135,13 @@ int preAssembler(FILE *file, char *file_name) {
     FILE *output;
 
     if (file == NULL) {
-        fprintf(stderr, "ERROR at line %d: File not found.\n", line_number);
+        fprintf(stderr, "ERROR: Failed to open file.\n");
         return 1;
     }
-    if (dot == NULL || strcmp(dot + 1, "as") != 0) {
-        fprintf(stderr, "ERROR at line %d: Invalid file name extension.\n", line_number);
-        return 1;
-    }
+    
+    /* Build the .am file name. */
+    sprintf(new_file_name, "%s.am", file_name);
 
-    strcpy(new_file_name, file_name);
-    new_file_name[strlen(file_name) - 1] = 'm';
     output = fopen(new_file_name, "w");
     if (output == NULL) {
         fprintf(stderr, "ERROR at line %d: Error creating .am file.\n", line_number);

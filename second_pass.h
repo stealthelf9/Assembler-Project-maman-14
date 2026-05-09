@@ -4,6 +4,6 @@
 #include "utils.h"
 #include "symbol_helpers.h"
 
-int secondPass(FILE *file, char *file_name, int *ic, int *dc, unsigned int *code_image, unsigned int *data_image);
+int secondPass(FILE *file, char *file_name, char *are_image, unsigned int *code_image, unsigned int *data_image, int dc, SymbolNode *head);
 
 #endif

@@ -112,3 +112,20 @@ SymbolNode *setSymbol(char *symbol_name, SymbolNode **head, SymbolNode **tail, i
     }
     return symbol;
 }
+
+int processSymbol(SymbolNode **head, SymbolNode **tail, SymbolNode **symbol, char *symbol_name, int line_number, int *error_flag, int is_extern) {
+    int symbol_validity;
+
+    symbol_validity = isSymbolValid(symbol_name, *head, line_number, is_extern);
+    if (symbol_validity == 1) {
+        *error_flag = 1;
+        return 1;
+    }
+
+    *symbol = setSymbol(symbol_name, head, tail, line_number);
+    
+    if (*symbol == NULL) {
+        return -1;
+    }
+    return 0;
+}
