@@ -15,4 +15,5 @@
     }
 
 int findCommand(char *command_name);
+int getAddressMode(char *operand);
 #endif

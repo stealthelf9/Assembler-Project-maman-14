@@ -34,7 +34,7 @@ typedef struct {
     unsigned int dest_modes;
 } Command;
 
-Command command_table[16];
+extern Command command_table[16];
 extern char *reserved_words[RESERVED_WORD_COUNT];
 
 #endif

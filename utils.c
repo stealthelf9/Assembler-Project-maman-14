@@ -11,3 +11,14 @@ int findCommand(char *command_name) {
     }
     return -1;
 }
+
+int getAddressMode(char *operand) {
+    if (operand[0] == '#')
+        return 0;
+    else if (operand[0] == '%')
+        return 2;
+    else if ((operand[0] == 'r' && (operand[1] >= '0' && operand[1] <= '7')) && (isspace(operand[2]) || operand[2] == '\0'))
+        return 3;
+    else
+        return 1;
+}

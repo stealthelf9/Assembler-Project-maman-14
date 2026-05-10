@@ -1,21 +1,6 @@
 #include "first_pass.h"
 
-unsigned int data_image[4096];
-unsigned int code_image[4096];
-char are_image[4096] = "";
-
-static int getAddressMode(char *operand) {
-    if (operand[0] == '#')
-        return 0;
-    else if (operand[0] == '%')
-        return 2;
-    else if ((operand[0] == 'r' && (operand[1] >= '0' && operand[1] <= '7')) && (isspace(operand[2]) || operand[2] == '\0'))
-        return 3;
-    else
-        return 1;
-}
-
-static int processData(char *operands, int *dc, int *ic, int line_number, int *error_flag){
+static int processData(char *operands, int *ic, int *dc, unsigned int *data_image, int line_number, int *error_flag){
     char *data;
     char *errptr;
     long int number;
@@ -50,7 +35,7 @@ static int processData(char *operands, int *dc, int *ic, int line_number, int *e
     return 0;
 }
 
-static int processString(char *operands, int *dc, int *ic, int line_number, int *error_flag) {
+static int processString(char *operands, int *ic, int *dc, unsigned int *data_image, int line_number, int *error_flag) {
     if (operands[0] != '"') {
         fprintf(stderr, "ERROR at line %d: String declaration must start with \".\n", line_number);
         *error_flag = 1;
@@ -115,7 +100,7 @@ static int processExtern(SymbolNode **head, SymbolNode **tail, SymbolNode **symb
     return 0;
 }
 
-static int processCommand(char *current_command, char *operands, int *dc, int *ic, int line_number, int *error_flag) {
+static int processCommand(char *current_command, char *operands, char *are_image, int *ic, int *dc, unsigned int *code_image, int line_number, int *error_flag) {
     int command_index = -1;
     int operand_count = 0;
     int command_word_count = 0;
@@ -238,36 +223,26 @@ static int processCommand(char *current_command, char *operands, int *dc, int *i
     return 0;
 }
 
-int firstPass(FILE *file, char *file_name) {
+int firstPass(FILE *file, char *file_name, char *are_image, unsigned int *code_image, unsigned int *data_image, int *ic, int *dc, SymbolNode **head) {
     char line[MAX_LINE_LENGTH] = "";
     char symbol_name[SYMBOL_NAME_MAX_LENGTH] = "";
 	char first_word[MAX_LINE_LENGTH] = "";
     char second_word[MAX_LINE_LENGTH] = "";
     char third_word[MAX_LINE_LENGTH] = "";
     char extra[2] = "";
-    char *parsed_operands[4] = "";
     char *current_command;
     char *operands;
-    char *source_str = NULL;
-    char *dest_str = NULL;
-    char *data;
-    char *token;
     char *ptr;
-    char *errptr;
 
 	int error_flag = 0;
     int error_type = 0;
     int in_label = 0;
-    int ic = 100;
-    int dc = 0;
     int line_number = 0;
     int symbol_validity = 1;
     int word_count = 0;
-    unsigned int binary_command = 0;
 
     SymbolNode *symbol;
     SymbolNode *current;
-    SymbolNode *head = NULL;
     SymbolNode *tail = NULL;
 
     while (fgets(line, sizeof(line), file) != NULL) {
@@ -286,9 +261,9 @@ int firstPass(FILE *file, char *file_name) {
             }
             else {
                 /* Check symbol validity and add to symbol table */
-                symbol_validity = processSymbol(&head, &tail, &symbol, symbol_name, line_number, &error_flag, 0);
+                symbol_validity = processSymbol(head, &tail, &symbol, symbol_name, line_number, &error_flag, 0);
                 if (symbol_validity == -1) {
-                    freeSymbolList(head);
+                    freeSymbolList(*head);
                     return 1;
                 }
                 if (symbol_validity == 1) {
@@ -296,11 +271,11 @@ int firstPass(FILE *file, char *file_name) {
                 }
 
                 if (strcmp(second_word, ".data") == 0 || strcmp(second_word, ".string") == 0) {
-                    symbol->value = dc;
+                    symbol->value = *dc;
                     symbol->is_data = 1;
                 }
                 else {
-                    symbol->value = ic;
+                    symbol->value = *ic;
                     symbol->is_code = 1;
                 }
             }
@@ -321,9 +296,9 @@ int firstPass(FILE *file, char *file_name) {
             operands++;
         
         if (strcmp(current_command, ".data") == 0) {
-            error_type = processData(operands, &dc, &ic, line_number, &error_flag);
+            error_type = processData(operands, ic, dc, data_image, line_number, &error_flag);
             if (error_type == -1) {
-                freeSymbolList(head);
+                freeSymbolList(*head);
                 return 1;
             }
             if (error_type == 1) {
@@ -335,18 +310,18 @@ int firstPass(FILE *file, char *file_name) {
             continue;
         }
         else if (strcmp(current_command, ".extern") == 0) {
-            error_type = processExtern(&head, &tail, &symbol, operands, line_number, &error_flag);
+            error_type = processExtern(head, &tail, &symbol, operands, line_number, &error_flag);
             if (error_type == -1) {
-                freeSymbolList(head);
+                freeSymbolList(*head);
                 return 1;
             }
             if (error_type == 1)
                 continue;
         }
         else if (strcmp(current_command, ".string") == 0) {
-            error_type = processString(operands, &dc, &ic, line_number, &error_flag);
+            error_type = processString(operands, ic, dc, data_image, line_number, &error_flag);
             if (error_type == -1) {
-                freeSymbolList(head);
+                freeSymbolList(*head);
                 return 1;
             }
             if (error_type == 1) {
@@ -354,9 +329,9 @@ int firstPass(FILE *file, char *file_name) {
             }
         }
         else {
-            error_type = processCommand(current_command, operands, &dc, &ic, line_number, &error_flag);
+            error_type = processCommand(current_command, operands, are_image, ic, dc, code_image, line_number, &error_flag);
             if (error_type == -1) {
-                freeSymbolList(head);
+                freeSymbolList(*head);
                 return 1;
             }
             if (error_type == 1) {
@@ -364,14 +339,14 @@ int firstPass(FILE *file, char *file_name) {
             }
         }
     }
-    current = head;
+    current = *head;
     while (current != NULL) {
         if (current->is_data == 1)
-            current->value += ic;
+            current->value += *ic;
         current = current->next;
     }
     if (error_flag == 1) {
-        freeSymbolList(head);
+        freeSymbolList(*head);
         return 1;
     }
     return 0;

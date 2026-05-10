@@ -1,0 +1,7 @@
+{
+    "files.associations": {
+        "string.h": "c",
+        "macro_helpers.h": "c",
+        "stdlib.h": "c"
+    }
+}

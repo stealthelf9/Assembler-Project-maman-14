@@ -4,7 +4,6 @@ static int processEntry(SymbolNode *head, char *operands, int line_number, int *
     char symbol_name[SYMBOL_NAME_MAX_LENGTH] = "";
     char extra[2] = "";
 
-    int symbol_validity = 0;
     int word_count = sscanf(operands, "%s %1s", symbol_name, extra);
 
     SymbolNode *symbol;
@@ -35,23 +34,12 @@ static int processEntry(SymbolNode *head, char *operands, int line_number, int *
     return 0;
 }
 
-static int getAddressMode(char *operand) {
-    if (operand[0] == '#')
-        return 0;
-    else if (operand[0] == '%')
-        return 2;
-    else if ((operand[0] == 'r' && (operand[1] >= '0' && operand[1] <= '7')) && (isspace(operand[2]) || operand[2] == '\0'))
-        return 3;
-    else
-        return 1;
-}
-
 static int exportObFile(char *file_name, char *are_image, int ic, int dc, unsigned int *code_image, unsigned int *data_image) {
     char new_file_name[MAX_FILE_NAME_LENGTH];
     int index = 0;
     FILE *output;
 
-    // Create the new file name.
+    /* Create the new file name. */
     sprintf(new_file_name, "%s.ob", file_name);
 
     output = fopen(new_file_name, "w");
@@ -112,33 +100,25 @@ int secondPass(FILE *file, char *file_name, char *are_image, unsigned int *code_
     char third_word[MAX_LINE_LENGTH] = "";
     char new_ext_file_name[MAX_FILE_NAME_LENGTH];    
     char extra[2] = "";
-    char *parsed_operands[4] = "";
+    char *parsed_operands[4] = {NULL};
     char *symbol_name;
     char *current_command;
     char *operands;
-    char *source_str = NULL;
-    char *dest_str = NULL;
-    char *data;
     char *token;
     char *ptr;
-    char *errptr;
 
 	int error_flag = 0;
     int error_type = 0;
     int in_label = 0;
     int ic = 100;
     int line_number = 0;
-    int symbol_validity = 1;
-    int word_count = 0;
-    int operand_count = {0};
-    int address_mode[2] = 0;
+    int operand_count = 0;
+    int address_mode[2] = {0};
     int offset = 0;
     int index = 0;
     int export_ob = 1;
     int export_ent = 1;
-    unsigned int binary_command = 0;
-    long int number = 0;
-
+    
     SymbolNode *symbol;
 
     FILE *ext_output = NULL;
@@ -147,7 +127,7 @@ int secondPass(FILE *file, char *file_name, char *are_image, unsigned int *code_
         line_number++;
         in_label = 0;
 
-		word_count = sscanf(line, "%s %s %s %1s", first_word, second_word, third_word, extra);
+		sscanf(line, "%s %s %s %1s", first_word, second_word, third_word, extra);
         if (strlen(first_word) > 1 && first_word[strlen(first_word) - 1] == ':') {
             in_label = 1;
         }
@@ -167,7 +147,7 @@ int secondPass(FILE *file, char *file_name, char *are_image, unsigned int *code_
             operands++;
         
         if (strcmp(current_command, ".entry") == 0) {
-            error_type = processEntry(head, operands, line_number, error_flag);
+            error_type = processEntry(head, operands, line_number, &error_flag);
             if (error_type == 1)
                 continue;
         }
