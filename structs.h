@@ -1,12 +1,18 @@
+/* This file contains all of the global definitions and structures used for the assembler.
+ * The macro and symbol nodes all use a linked list.
+ */
+
 #ifndef STRUCTS_H
 #define STRUCTS_H
 
-#define MACRO_NAME_MAX_LENGTH 33 /* 32 for macro name + padding and then 1 buffer to check if the macro name length is longer than 31 */
-#define SYMBOL_NAME_MAX_LENGTH 33 /* 32 for symbol name + padding and then 1 buffer to check if the symbol name length is longer than 31 */
-#define MAX_LINE_LENGTH 82
-#define MAX_FILE_NAME_LENGTH 256
+#define MACRO_NAME_MAX_LENGTH 33 /* 32 for macro name + padding and then 1 buffer to check if the macro name length is longer than 31 characters */
+#define SYMBOL_NAME_MAX_LENGTH 33 /* 32 for symbol name + padding and then 1 buffer to check if the symbol name length is longer than 31 characters */
+#define MAX_LINE_LENGTH 82 /* 80 for the line, + padding and then 1 buffer to check if the line is longer than 81 characters */
+#define MAX_FILE_NAME_LENGTH 256 /* Modern operating system limit. */
 #define RESERVED_WORD_COUNT 29
+#define MAX_MEMORY_SIZE 4096 /* Memory size of the imaginary computer. */
 #define ARRAY_SIZE(array) ((sizeof(array)) / (sizeof(array[0])))
+#define IC_INIT_VALUE 100
 
 typedef struct MacroNode {
     char *name;

@@ -1,9 +1,48 @@
 #include "first_pass.h"
 
+static int checkCommas(char *str, int line_number, int *error_flag) {
+    int index;
+    int has_data = 0;
+    int last_was_comma = 0;
+
+    if (str == NULL || str[0] == '\0')
+        return 0;
+
+    for (index = 0; str[index] != '\0'; index++) {
+        if (isspace((unsigned char)str[index]))
+            continue;
+
+        if (str[index] == ',') {
+            if (!has_data || last_was_comma) {
+                fprintf(stderr, "ERROR at line %d: Illegal comma placement (leading or consecutive commas).\n", line_number);
+                *error_flag = 1;
+                return 1;
+            }
+            last_was_comma = 1;
+        }
+        else {
+            has_data = 1;
+            last_was_comma = 0;
+        }
+    }
+
+    /* If the loop finished and the last non-space character is a comma */
+    if (last_was_comma) {
+        fprintf(stderr, "ERROR at line %d: Illegal trailing comma.\n", line_number);
+        *error_flag = 1;
+        return 1;
+    }
+
+    return 0;
+}
+
 static int processData(char *operands, int *ic, int *dc, unsigned int *data_image, int line_number, int *error_flag){
     char *data;
     char *errptr;
     long int number;
+
+    if (checkCommas(operands, line_number, error_flag) == 1)
+        return 1;
 
     data = strtok(operands, ",");
     while (data != NULL) {
@@ -26,10 +65,6 @@ static int processData(char *operands, int *ic, int *dc, unsigned int *data_imag
         (*dc)++;
         CHECK_MEM(*dc, *ic);
         
-        if ((*dc) >= 4096) {
-            fprintf(stderr, "FATAL ERROR: memory overflow\n");
-            return -1;
-        }
         data = strtok(NULL, ",");
     }
     return 0;
@@ -123,6 +158,9 @@ static int processCommand(char *current_command, char *operands, char *are_image
         return 1;
     }
     
+    if (checkCommas(operands, line_number, error_flag) == 1)
+        return 1;
+
     token = strtok(operands, ",");
     while (token != NULL && operand_count < 4) {
         while (*token != '\0' && isspace((unsigned char) *token))
@@ -180,23 +218,23 @@ static int processCommand(char *current_command, char *operands, char *are_image
                      (final_source << 2) |
                      (final_dest);
 
-    code_image[(*ic) - 100] = binary_command;
-    are_image[(*ic) - 100] = 'A';
+    code_image[(*ic) - IC_INIT_VALUE] = binary_command;
+    are_image[(*ic) - IC_INIT_VALUE] = 'A';
 
     offset = 1;
     if (operand_count == 2) {
         if (source_mode == 0) {
             number = atoi(source_str + 1);
-            code_image[(*ic) - 100 + offset] = number & 0xFFF;
-            are_image[(*ic) - 100 + offset] = 'A';
+            code_image[(*ic) - IC_INIT_VALUE + offset] = number & 0xFFF;
+            are_image[(*ic) - IC_INIT_VALUE + offset] = 'A';
         }
         else if (source_mode == 3) {
             number = 1 << (source_str[1] - '0');
-            code_image[(*ic) - 100 + offset] = number;
-            are_image[(*ic) - 100 + offset] = 'A';
+            code_image[(*ic) - IC_INIT_VALUE + offset] = number;
+            are_image[(*ic) - IC_INIT_VALUE + offset] = 'A';
         }
         else {
-            code_image[(*ic) - 100 + offset] = 0;
+            code_image[(*ic) - IC_INIT_VALUE + offset] = 0;
         }
         offset++;
     }
@@ -204,16 +242,16 @@ static int processCommand(char *current_command, char *operands, char *are_image
     if (operand_count >= 1) {
         if (dest_mode == 0) {
             number = atoi(dest_str + 1);
-            code_image[(*ic) - 100 + offset] = number & 0xFFF;
-            are_image[(*ic) - 100 + offset] = 'A';
+            code_image[(*ic) - IC_INIT_VALUE + offset] = number & 0xFFF;
+            are_image[(*ic) - IC_INIT_VALUE + offset] = 'A';
         }
         else if (dest_mode == 3) {
             number = 1 << (dest_str[1] - '0');
-            code_image[(*ic) - 100 + offset] = number;
-            are_image[(*ic) - 100 + offset] = 'A';
+            code_image[(*ic) - IC_INIT_VALUE + offset] = number;
+            are_image[(*ic) - IC_INIT_VALUE + offset] = 'A';
         }
         else {
-            code_image[(*ic) - 100 + offset] = 0;
+            code_image[(*ic) - IC_INIT_VALUE + offset] = 0;
         }
     }
 

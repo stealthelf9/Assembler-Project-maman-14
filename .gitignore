@@ -1,1 +1,7 @@
 structs.h.gch
+*.as
+*.ob
+*.ent
+*.o
+*.ent
+*.ext

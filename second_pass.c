@@ -49,10 +49,10 @@ static int exportObFile(char *file_name, char *are_image, int ic, int dc, unsign
         return 1;
     }
 
-    fprintf(output, "%d %d\n", (ic - 100), dc);
+    fprintf(output, "%d %d\n", (ic - IC_INIT_VALUE), dc);
     /* Print the code */
-    for (index = 0; index < (ic - 100); index++)
-        fprintf(output, "%04d %03X %c\n", (index + 100), code_image[index], are_image[index]);
+    for (index = 0; index < (ic - IC_INIT_VALUE); index++)
+        fprintf(output, "%04d %03X %c\n", (index + IC_INIT_VALUE), code_image[index], are_image[index]);
 
     /* Print the data */
     for (index = 0; index < dc; index++)
@@ -110,7 +110,7 @@ int secondPass(FILE *file, char *file_name, char *are_image, unsigned int *code_
 	int error_flag = 0;
     int error_type = 0;
     int in_label = 0;
-    int ic = 100;
+    int ic = IC_INIT_VALUE;
     int line_number = 0;
     int operand_count = 0;
     int address_mode[2] = {0};
@@ -179,7 +179,7 @@ int secondPass(FILE *file, char *file_name, char *are_image, unsigned int *code_
                         continue;
                     }
 
-                    offset = (ic - 100) + 1 + index;
+                    offset = (ic - IC_INIT_VALUE) + 1 + index;
                     
                     if (symbol->is_extern == 1) {
                         if (address_mode[index] == 2) {
@@ -201,7 +201,7 @@ int secondPass(FILE *file, char *file_name, char *are_image, unsigned int *code_
                             }
                         }
 
-                        fprintf(ext_output, "%s %04d\n", symbol->name, (offset + 100));
+                        fprintf(ext_output, "%s %04d\n", symbol->name, (offset + IC_INIT_VALUE));
                         code_image[offset] = 0;
                         are_image[offset] = 'E';
                     }
@@ -211,7 +211,7 @@ int secondPass(FILE *file, char *file_name, char *are_image, unsigned int *code_
                     }
 
                     else if (address_mode[index] == 2) {
-                        code_image[offset] = symbol->value - (ic + 1 + index);
+                        code_image[offset] = (symbol->value - (ic + 1 + index)) & 0xFFF; /* We mask with 0xFFF so that negative numbers will not print more than 3 characters. */
                         are_image[offset] = 'A';
                     }
                 } 

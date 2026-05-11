@@ -12,9 +12,9 @@ int main(int argc, char *argv[]) {
 
     int ic = 100;
     int dc = 0;
-    unsigned int code_image[4096] = {0};
-    unsigned int data_image[4096] = {0};
-    char are_image[4096] = "";
+    unsigned int code_image[MAX_MEMORY_SIZE] = {0};
+    unsigned int data_image[MAX_MEMORY_SIZE] = {0};
+    char are_image[MAX_MEMORY_SIZE] = "";
     SymbolNode *head = NULL;
 
     FILE *input;

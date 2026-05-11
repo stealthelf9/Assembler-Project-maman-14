@@ -7,9 +7,8 @@
 #include <stdlib.h>
 #include "structs.h"
 
-#define MAX_FILE_SIZE 256 /* Modern file system limit. */
 #define CHECK_MEM(ic, dc) \
-    if (((dc) + (ic)) >= 4096) { \
+    if (((dc) + (ic)) >= MAX_MEMORY_SIZE) { \
         fprintf(stderr, "FATAL ERROR: memory overflow\n"); \
         return -1; \
     }

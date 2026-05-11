@@ -1,6 +1,7 @@
 #include "pre_assembler.h"
 
-/* 1. Processes labels, .extern, and .entry to check for macro conflicts */
+/* Processes labels, .extern, and .entry to check for macro conflicts 
+   because the macro cannot have the same name as a symbol */
 static int processPreAssemblerSymbol(char *first_word, char *second_word, int word_count, 
                               MacroNode *mac_head, SymbolNode **sym_head, SymbolNode **sym_tail, 
                               int line_number, int *error_flag) {
@@ -41,7 +42,7 @@ static int processPreAssemblerSymbol(char *first_word, char *second_word, int wo
     return 0;
 }
 
-/* 2. Safely allocates memory to add a new line of code to the current macro */
+/* Safely allocates memory to add a new line of code to the current macro */
 static int addLineToMacro(MacroNode *macro, char *line, int line_number) {
     macro->code = realloc(macro->code, (macro->line_count + 1) * sizeof(char *));
     if (macro->code == NULL) {
@@ -99,7 +100,7 @@ static int startMacroDefinition(char *macro_name, int macro_param_count,
         return 1;
     }
     else {
-        fprintf(stderr, "ERROR at line %d: No mcro name given.\n", line_number);
+        fprintf(stderr, "ERROR at line %d: No macro name given.\n", line_number);
         *error_flag = 1;
         return 1;
     }
@@ -108,7 +109,6 @@ static int startMacroDefinition(char *macro_name, int macro_param_count,
 int preAssembler(FILE *file, char *file_name) {
     char line[MAX_LINE_LENGTH] = "";
     char macro_name[MACRO_NAME_MAX_LENGTH] = "";
-    char symbol_name[SYMBOL_NAME_MAX_LENGTH] = "";
     char extra[2] = ""; /* We do size 2 in order to be able to use it with sscanf to skip whitespaces */
     char first_word[MAX_LINE_LENGTH] = "";
     char second_word[MAX_LINE_LENGTH] = "";
@@ -128,7 +128,6 @@ int preAssembler(FILE *file, char *file_name) {
     MacroNode *mac_head = NULL;
     MacroNode *mac_tail = NULL;
 
-    SymbolNode *symbol;
     SymbolNode *sym_head = NULL;
     SymbolNode *sym_tail = NULL;
 
@@ -154,7 +153,6 @@ int preAssembler(FILE *file, char *file_name) {
 
         /* Wipe the strings clean for this new line */
         macro_name[0] = '\0';
-        symbol_name[0] = '\0';
         first_word[0] = '\0';
         second_word[0] = '\0';
         /* If the line is too long */
@@ -167,7 +165,7 @@ int preAssembler(FILE *file, char *file_name) {
         }
         
         /* If the macro name is too long */
-        macro_param_count = sscanf(line, "mcro %32s %1s", macro_name, extra);
+        macro_param_count = sscanf(line, " mcro %32s %1s", macro_name, extra);
         if (strlen(macro_name) == 32) {
             fprintf(stderr, "ERROR at line %d: Macro name length is longer than 31 characters.\n", line_number);
             error_flag = 1;
@@ -175,6 +173,10 @@ int preAssembler(FILE *file, char *file_name) {
         }
 
         word_count = sscanf(line, "%s %32s", first_word, second_word);
+
+        /* Skip comment lines and completely empty lines */
+        if (line[0] == ';' || first_word[0] == ';' || word_count <= 0)
+            continue;
         /* If we're in the symbol declaration */
         sym_status = processPreAssemblerSymbol(first_word, second_word, word_count, mac_head, &sym_head, &sym_tail, line_number, &error_flag);
         /* Fatal memory error */
@@ -209,7 +211,7 @@ int preAssembler(FILE *file, char *file_name) {
             continue;
         }
         /* If it's not a macro declaration, a blank line or a comment line, then write the line and continue to the next one. */
-        else if (((macro_param_count == EOF || macro_param_count == 0) && strcmp(first_word, "mcro") != 0) || line[0] == ';') {
+        else if ((macro_param_count == EOF || macro_param_count == 0) && strcmp(first_word, "mcro") != 0) {
             /* If the word is a macro. */
             macro = findMacro(first_word, mac_head);
             if (word_count == 1 && macro != NULL ) {
