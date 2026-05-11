@@ -10,7 +10,7 @@ int main(int argc, char *argv[]) {
     int first_pass_val = 1;
     int second_pass_val = 1;
 
-    int ic = 100;
+    int ic = IC_INIT_VALUE;
     int dc = 0;
     unsigned int code_image[MAX_MEMORY_SIZE] = {0};
     unsigned int data_image[MAX_MEMORY_SIZE] = {0};
@@ -22,7 +22,7 @@ int main(int argc, char *argv[]) {
     for (index = 1; index < argc; index++) {
         /* Reset everything for the next file. */
         file_name = argv[index];
-        ic = 100;
+        ic = IC_INIT_VALUE;
         dc = 0;
         head = NULL;
 

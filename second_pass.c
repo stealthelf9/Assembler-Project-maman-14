@@ -211,7 +211,7 @@ int secondPass(FILE *file, char *file_name, char *are_image, unsigned int *code_
                     }
 
                     else if (address_mode[index] == 2) {
-                        code_image[offset] = (symbol->value - (ic + 1 + index)) & 0xFFF; /* We mask with 0xFFF so that negative numbers will not print more than 3 characters. */
+                        code_image[offset] = (symbol->value - (ic + 1 + index)) & MASK_12_BITS; /* We mask with 0xFFF so that negative numbers will not print more than 3 characters. */
                         are_image[offset] = 'A';
                     }
                 } 

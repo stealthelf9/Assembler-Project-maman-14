@@ -9,7 +9,7 @@ static int processPreAssemblerSymbol(char *first_word, char *second_word, int wo
     int is_symbol = 0;
 
     if ((strcmp(first_word, ".extern") == 0 || strcmp(first_word, ".entry") == 0) && word_count >= 2) {
-        if (strlen(second_word) > 31) {
+        if (strlen(second_word) > SYMBOL_NAME_MAX_LENGTH - 2) {
             fprintf(stderr, "ERROR at line %d: Symbol name is longer than 31 characters.\n", line_number);
             *error_flag = 1;
             return 1;
@@ -18,7 +18,7 @@ static int processPreAssemblerSymbol(char *first_word, char *second_word, int wo
         is_symbol = 1;
     }
     else if (strlen(first_word) > 1 && first_word[strlen(first_word) - 1] == ':') {
-        if (strlen(first_word) > 32) {
+        if (strlen(first_word) > SYMBOL_NAME_MAX_LENGTH - 1) {
             fprintf(stderr, "ERROR at line %d: Symbol name is longer than 31 characters.\n", line_number);
             *error_flag = 1;
             return 1;
@@ -166,7 +166,7 @@ int preAssembler(FILE *file, char *file_name) {
         
         /* If the macro name is too long */
         macro_param_count = sscanf(line, " mcro %32s %1s", macro_name, extra);
-        if (strlen(macro_name) == 32) {
+        if (strlen(macro_name) == SYMBOL_NAME_MAX_LENGTH - 1) {
             fprintf(stderr, "ERROR at line %d: Macro name length is longer than 31 characters.\n", line_number);
             error_flag = 1;
             continue;

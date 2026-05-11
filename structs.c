@@ -1,7 +1,7 @@
 #include "structs.h"
 
-char *reserved_words[] = {"r1","r2","r3","r4","r5","r6","r7","mov","cmp","add","sub","lea","clr","not","inc","dec",
-                        "jmp","bne","jsr","red","prn","rts","stop", ".data", ".string", ".entry", ".extern", "mcro", "mcroend"};
+const char *reserved_words[] = {"r0", "r1","r2","r3","r4","r5","r6","r7","mov","cmp","add","sub","lea","clr","not","inc","dec",
+                        "jmp","bne","jsr","red","prn","rts","stop", "mcro", "mcroend"};
 
 /* Command list with their opcodes, functs, number of words and valid modes for source and destination. */
 Command command_table[16] = {

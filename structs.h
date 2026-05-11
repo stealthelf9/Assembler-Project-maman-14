@@ -9,10 +9,11 @@
 #define SYMBOL_NAME_MAX_LENGTH 33 /* 32 for symbol name + padding and then 1 buffer to check if the symbol name length is longer than 31 characters */
 #define MAX_LINE_LENGTH 82 /* 80 for the line, + padding and then 1 buffer to check if the line is longer than 81 characters */
 #define MAX_FILE_NAME_LENGTH 256 /* Modern operating system limit. */
-#define RESERVED_WORD_COUNT 29
+#define RESERVED_WORD_COUNT 26 /* We do not need for .data, .string, .entry or for .extern because when checking for the symbol or macro name, they can't start with a dot.*/
 #define MAX_MEMORY_SIZE 4096 /* Memory size of the imaginary computer. */
 #define ARRAY_SIZE(array) ((sizeof(array)) / (sizeof(array[0])))
 #define IC_INIT_VALUE 100
+#define MASK_12_BITS 0xFFF
 
 typedef struct MacroNode {
     char *name;
@@ -40,7 +41,7 @@ typedef struct {
     unsigned int dest_modes;
 } Command;
 
-extern Command command_table[16];
-extern char *reserved_words[RESERVED_WORD_COUNT];
+extern const Command command_table[16];
+extern const char *reserved_words[RESERVED_WORD_COUNT];
 
 #endif

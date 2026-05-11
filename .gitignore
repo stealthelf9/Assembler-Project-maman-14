@@ -1,5 +1,7 @@
 structs.h.gch
 *.as
+testers/
+*.am
 *.ob
 *.ent
 *.o

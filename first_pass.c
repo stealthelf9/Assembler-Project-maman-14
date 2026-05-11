@@ -61,7 +61,7 @@ static int processData(char *operands, int *ic, int *dc, unsigned int *data_imag
             return 1;
         }
         
-        data_image[*dc] = number & 0xFFF;
+        data_image[*dc] = number & MASK_12_BITS;
         (*dc)++;
         CHECK_MEM(*dc, *ic);
         
@@ -225,7 +225,7 @@ static int processCommand(char *current_command, char *operands, char *are_image
     if (operand_count == 2) {
         if (source_mode == 0) {
             number = atoi(source_str + 1);
-            code_image[(*ic) - IC_INIT_VALUE + offset] = number & 0xFFF;
+            code_image[(*ic) - IC_INIT_VALUE + offset] = number & MASK_12_BITS;
             are_image[(*ic) - IC_INIT_VALUE + offset] = 'A';
         }
         else if (source_mode == 3) {
@@ -242,7 +242,7 @@ static int processCommand(char *current_command, char *operands, char *are_image
     if (operand_count >= 1) {
         if (dest_mode == 0) {
             number = atoi(dest_str + 1);
-            code_image[(*ic) - IC_INIT_VALUE + offset] = number & 0xFFF;
+            code_image[(*ic) - IC_INIT_VALUE + offset] = number & MASK_12_BITS;
             are_image[(*ic) - IC_INIT_VALUE + offset] = 'A';
         }
         else if (dest_mode == 3) {
