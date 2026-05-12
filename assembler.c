@@ -1,5 +1,12 @@
 #include "assembler.h"
 
+/**
+ * main
+ * Processes the input files and gives them to the pre-assembler, then first pass and then second pass.
+ * @param argc The number of command-line arguments.
+ * @param argv An array of strings containing the command-line arguments.
+ * @return 0 for success
+ */
 int main(int argc, char *argv[]) {
     char *file_name;
     char new_file_name[MAX_FILE_NAME_LENGTH];
@@ -26,8 +33,10 @@ int main(int argc, char *argv[]) {
         dc = 0;
         head = NULL;
 
+        /* Append .as to the file name */
         sprintf(new_file_name, "%s.as", file_name);
         input = fopen(new_file_name, "r");
+        /* If it failed to to the next file */
         if (input == NULL) {
             fprintf(stderr, "ERROR: Cannot open %s.as file.\n", file_name);
             continue;
@@ -36,9 +45,11 @@ int main(int argc, char *argv[]) {
         pre_assembler_val = preAssembler(input, file_name);
         fclose(input);
 
+        /* If it failed to to the next file */
         if (pre_assembler_val == 1)
             continue;
-        
+
+        /* Append .am to the file name */
         sprintf(new_file_name, "%s.am", file_name);
         input = fopen(new_file_name, "r");
         if (input == NULL) {
@@ -48,11 +59,12 @@ int main(int argc, char *argv[]) {
 
         first_pass_val = firstPass(input, file_name, are_image, code_image, data_image, &ic, &dc, &head);
 
+        /* If it failed to to the next file */
         if (first_pass_val == 1) {
             fclose(input);
             continue;
         }
-
+        /* Go back to reading the beginning of the file */
         rewind(input);
 
         second_pass_val = secondPass(input, file_name, are_image, code_image, data_image, dc, head);

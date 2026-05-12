@@ -93,6 +93,18 @@ static int exportEntFile(char *file_name, SymbolNode *head) {
     return 0;
 }
 
+/**
+ * secondPass 
+ * This is the second pass of the assembler. It fills in the the images that are from other modes that are from the symbol table created by the first pass.
+ * @param file The processed file from the pre-assembler.
+ * @param file_name The file name.
+ * @param are_image The image for all the A R E letters.
+ * @param code_image The code image.
+ * @param data_image The data image.
+ * @param dc The data counter.
+ * @param head The head to the linked list of the symbols.
+ * @return 1 for faliure, 0 for success. 
+ */
 int secondPass(FILE *file, char *file_name, char *are_image, unsigned int *code_image, unsigned int *data_image, int dc, SymbolNode *head) {
     char line[MAX_LINE_LENGTH] = "";
 	char first_word[MAX_LINE_LENGTH] = "";
@@ -126,12 +138,12 @@ int secondPass(FILE *file, char *file_name, char *are_image, unsigned int *code_
     while (fgets(line, sizeof(line), file) != NULL) {
         line_number++;
         in_label = 0;
-
+        /* Save the words */
 		sscanf(line, "%s %s %s %1s", first_word, second_word, third_word, extra);
         if (strlen(first_word) > 1 && first_word[strlen(first_word) - 1] == ':') {
             in_label = 1;
         }
-        /* handle commands*/
+        /* handle commands */
         if (in_label)
             current_command = second_word;
         else
@@ -145,32 +157,35 @@ int secondPass(FILE *file, char *file_name, char *are_image, unsigned int *code_
         /* Skip whitespace */
         while (*operands != '\0' && isspace((unsigned char) *operands))
             operands++;
-        
+        /* If the command is entry */
         if (strcmp(current_command, ".entry") == 0) {
             error_type = processEntry(head, operands, line_number, &error_flag);
             if (error_type == 1)
                 continue;
         }
+        /* Else if the command is data, string or extern, they have already been dealt with in the first pass. */
         else if (strcmp(current_command, ".data") == 0 || strcmp(current_command, ".string") == 0 || strcmp(current_command, ".extern") == 0)
             continue;
+        /* Else it's a command */
         else {
-            operand_count = 0;
+            operand_count = 0; /* reset the operand count */
             token = strtok(operands, ",");
             while (token != NULL && operand_count < 4) {
-                while (*token != '\0' && isspace((unsigned char) *token))
+                while (*token != '\0' && isspace((unsigned char) *token)) /* Skip whitespace */
                     token++;
+                /* Save the operands and get the address mode */
                 parsed_operands[operand_count] = token;
                 address_mode[operand_count] = getAddressMode(parsed_operands[operand_count]);
                 operand_count++;
-                token = strtok(NULL, ",");
+                token = strtok(NULL, ","); /* Go to the next operand */
             }
 
             for (index = 0; index < operand_count; index++) {
                 if (address_mode[index] == 1 || address_mode[index] == 2) {
-                    symbol_name = strtok(parsed_operands[index], " \n\t\r");
+                    symbol_name = strtok(parsed_operands[index], " \n\t\r"); /* Get the symbol name without any whitespace */
 
                     if (address_mode[index] == 2)
-                        symbol_name = parsed_operands[index] + 1;
+                        symbol_name = parsed_operands[index] + 1; /* Symbol Name is after the percent sign */
                     
                     symbol = findSymbol(symbol_name, head);
                     if (symbol == NULL) {
@@ -179,7 +194,6 @@ int secondPass(FILE *file, char *file_name, char *are_image, unsigned int *code_
                         continue;
                     }
 
-                    offset = (ic - IC_INIT_VALUE) + 1 + index;
                     
                     if (symbol->is_extern == 1) {
                         if (address_mode[index] == 2) {
@@ -201,6 +215,8 @@ int secondPass(FILE *file, char *file_name, char *are_image, unsigned int *code_
                             }
                         }
 
+                        offset = (ic - IC_INIT_VALUE) + 1 + index;
+                        /* Save the symbol name and its ic value at the current moment */
                         fprintf(ext_output, "%s %04d\n", symbol->name, (offset + IC_INIT_VALUE));
                         code_image[offset] = 0;
                         are_image[offset] = 'E';
@@ -226,15 +242,16 @@ int secondPass(FILE *file, char *file_name, char *are_image, unsigned int *code_
         if (error_flag == 1)
             remove(new_ext_file_name);
     }
-
+    /* Save the files if there's no error. */
     if (error_flag == 0) {
         export_ob = exportObFile(file_name, are_image, ic, dc, code_image, data_image);
         export_ent = exportEntFile(file_name, head);
     }
 
     freeSymbolList(head);
+    /* If saving the file was unsuccessful, return 1 */
     if (export_ob == 1 || export_ent == 1)
         return 1;
-    
-    return error_flag;
+
+    return error_flag; /* returns 0 if there's no error. */
 }

@@ -1,14 +1,16 @@
 #include "first_pass.h"
 
+/* Checks if there's a comma before the operand, 2 commas in a row or if there's a comma in the end. */
 static int checkCommas(char *str, int line_number, int *error_flag) {
     int index;
     int has_data = 0;
     int last_was_comma = 0;
 
     if (str == NULL || str[0] == '\0')
-        return 0;
+        return 0; /* processData and processString will deal with empty operands. */
 
     for (index = 0; str[index] != '\0'; index++) {
+        /* Skip spaces */
         if (isspace((unsigned char)str[index]))
             continue;
 
@@ -36,14 +38,22 @@ static int checkCommas(char *str, int line_number, int *error_flag) {
     return 0;
 }
 
+/* Processes the .data command and saves numbers into the .data image. */
 static int processData(char *operands, int *ic, int *dc, unsigned int *data_image, int line_number, int *error_flag){
     char *data;
     char *errptr;
     long int number;
 
+    if (operands == NULL || operands[0] == '\0') {
+        fprintf(stderr, "ERROR at line %d: Missing operands after .data directive.\n", line_number);
+        *error_flag = 1;
+        return 1;
+    }
+
     if (checkCommas(operands, line_number, error_flag) == 1)
         return 1;
 
+    /* Get the operands and check if a number was inputted */
     data = strtok(operands, ",");
     while (data != NULL) {
         number = strtol(data, &errptr, 10);
@@ -52,6 +62,7 @@ static int processData(char *operands, int *ic, int *dc, unsigned int *data_imag
             *error_flag = 1;
             return 1;
         }
+        /* Skip whitespaces to make sure that the error of where the number ends is only whitespace and that there was no comma missing between numbers. */
         while (*errptr != '\0' && isspace((unsigned char) *errptr))
             errptr++;
         
@@ -60,7 +71,7 @@ static int processData(char *operands, int *ic, int *dc, unsigned int *data_imag
             *error_flag = 1;
             return 1;
         }
-        
+        /* Mask the number so that only 3 digits/letters will be used in the hexadecimal representation */
         data_image[*dc] = number & MASK_12_BITS;
         (*dc)++;
         CHECK_MEM(*dc, *ic);
@@ -70,6 +81,7 @@ static int processData(char *operands, int *ic, int *dc, unsigned int *data_imag
     return 0;
 }
 
+/* Processes the .string command, converts strings into integers and saves them into the data_image. */
 static int processString(char *operands, int *ic, int *dc, unsigned int *data_image, int line_number, int *error_flag) {
     if (operands[0] != '"') {
         fprintf(stderr, "ERROR at line %d: String declaration must start with \".\n", line_number);
@@ -96,6 +108,7 @@ static int processString(char *operands, int *ic, int *dc, unsigned int *data_im
     }
     operands++;
     
+    /* Skip whitespace */
     while (*operands != '\0' && isspace((unsigned char) *operands)){
         operands++;
     }
@@ -107,6 +120,7 @@ static int processString(char *operands, int *ic, int *dc, unsigned int *data_im
     return 0;
 }
 
+/* Processes the .extern command and saves the extern symbol to the symbol table. */
 static int processExtern(SymbolNode **head, SymbolNode **tail, SymbolNode **symbol ,char *operands, int line_number, int *error_flag) {
     char symbol_name[SYMBOL_NAME_MAX_LENGTH] = "";
     char extra[2] = "";
@@ -125,16 +139,17 @@ static int processExtern(SymbolNode **head, SymbolNode **tail, SymbolNode **symb
     }
     symbol_validity = processSymbol(head, tail, symbol, symbol_name, line_number, error_flag, 1);
     if (symbol_validity == -1) {
-        return -1;
+        return -1; /* Fatal error with memory */
     }
     if (symbol_validity == 1) {
-        return 1;
+        return 1; /* Symbol has an invalid name */
     }
 
     (*symbol)->is_extern = 1;
     return 0;
 }
 
+/* Processes every command (e.g. mov, prn, etc.), assigns the opcode, sets the binary number and saves it into the code image. */
 static int processCommand(char *current_command, char *operands, char *are_image, int *ic, int *dc, unsigned int *code_image, int line_number, int *error_flag) {
     int command_index = -1;
     int operand_count = 0;
@@ -161,6 +176,7 @@ static int processCommand(char *current_command, char *operands, char *are_image
     if (checkCommas(operands, line_number, error_flag) == 1)
         return 1;
 
+    /* Get the first operand, then skip whitespaces then save the next operands into parsed_operands. */
     token = strtok(operands, ",");
     while (token != NULL && operand_count < 4) {
         while (*token != '\0' && isspace((unsigned char) *token))
@@ -177,32 +193,35 @@ static int processCommand(char *current_command, char *operands, char *are_image
         *error_flag = 1;
         return 1;
     }
-    
+    /* If there are 2 operands, then there's a source and destination mode */
     if (operand_count == 2) {
         source_mode = getAddressMode(parsed_operands[0]);
         source_str = parsed_operands[0];
         dest_mode = getAddressMode(parsed_operands[1]);
         dest_str = parsed_operands[1];
     }
-    if (operand_count == 1) {
+    /* if there's only 1 operand then there's only a destination mode */
+    else if (operand_count == 1) {
         source_mode = -1;
         dest_mode = getAddressMode(parsed_operands[0]);
         dest_str = parsed_operands[0];
     }
-    if (operand_count == 0) {
+    else if (operand_count == 0) {
         source_mode = -1;
         dest_mode = -1;
     }
 
     if (source_mode != -1) {
+        /* If the source mode isn't a valid source mode of the command */
         if ((command_table[command_index].source_modes & (1 << source_mode)) == 0) {
             fprintf(stderr, "ERROR at line %d: Invalid source addressing mode for command %s.\n", line_number, current_command);
             *error_flag = 1;
             return 1;
         }
+        /* Otherwise, set the final source mode to be the source mode (so that we won't have to deal with the source mode being -1 and final_source is set by default to 0). */
         final_source = source_mode;
     }
-    
+    /* Same thing for destination mode */
     if (dest_mode != -1) {
         if ((command_table[command_index].dest_modes & (1 << dest_mode)) == 0) {
             fprintf(stderr, "ERROR at line %d: Invalid destination addressing mode for command %s.\n", line_number, current_command);
@@ -217,11 +236,12 @@ static int processCommand(char *current_command, char *operands, char *are_image
                      (command_table[command_index].funct << 4) |
                      (final_source << 2) |
                      (final_dest);
-
+    /* Save it to the images */
     code_image[(*ic) - IC_INIT_VALUE] = binary_command;
     are_image[(*ic) - IC_INIT_VALUE] = 'A';
 
     offset = 1;
+    /* Save the number in the source mode (other modes will be dealt with in the second pass)*/
     if (operand_count == 2) {
         if (source_mode == 0) {
             number = atoi(source_str + 1);
@@ -229,7 +249,7 @@ static int processCommand(char *current_command, char *operands, char *are_image
             are_image[(*ic) - IC_INIT_VALUE + offset] = 'A';
         }
         else if (source_mode == 3) {
-            number = 1 << (source_str[1] - '0');
+            number = 1 << (source_str[1] - '0'); /* We get the value of the string by removing the ascii value of 0 from the ascii value of the wanted number. */
             code_image[(*ic) - IC_INIT_VALUE + offset] = number;
             are_image[(*ic) - IC_INIT_VALUE + offset] = 'A';
         }
@@ -238,7 +258,7 @@ static int processCommand(char *current_command, char *operands, char *are_image
         }
         offset++;
     }
-
+    /* Same thing for the destination mode */
     if (operand_count >= 1) {
         if (dest_mode == 0) {
             number = atoi(dest_str + 1);
@@ -261,6 +281,20 @@ static int processCommand(char *current_command, char *operands, char *are_image
     return 0;
 }
 
+/**
+ * firstPass
+ * This is the first pass. It uses the file processed by the pre-assembler, it saves the commands into the code image, strings and numbers into the data image
+ * and also saves the binary values of the commands that only have immediate or register modes inside the commands into the code image and ARE image.
+ * @param file The processed file from the pre-assembler.
+ * @param file_name The file name.
+ * @param are_image The ARE image.
+ * @param code_image The code image.
+ * @param data_image The data image.
+ * @param ic The instruction counter.
+ * @param dc The data counter.
+ * @param head The head of the symbol table.
+ * @return 1 for faliure, 0 for success. 
+ */
 int firstPass(FILE *file, char *file_name, char *are_image, unsigned int *code_image, unsigned int *data_image, int *ic, int *dc, SymbolNode **head) {
     char line[MAX_LINE_LENGTH] = "";
     char symbol_name[SYMBOL_NAME_MAX_LENGTH] = "";
@@ -288,13 +322,14 @@ int firstPass(FILE *file, char *file_name, char *are_image, unsigned int *code_i
         in_label = 0;
 
 		word_count = sscanf(line, "%s %s %s %1s", first_word, second_word, third_word, extra);
-
+        /* If it's a symbol declaration */
         if (strlen(first_word) > 1 && first_word[strlen(first_word) - 1] == ':') {
             first_word[strlen(first_word) - 1] = '\0'; /* Chop off the colon. */
             strcpy(symbol_name, first_word); /* Save the symbol name. */
             in_label = 1;
 
             if (strcmp(second_word, ".extern") == 0 || strcmp(second_word, ".entry") == 0) {
+                /* .extern and .entry will be handeled as a command that will be the second word in the handel commands section */
                 fprintf(stderr, "WARNING at line %d: Labels declared with .extern or .entry will be ignored.\n", line_number);
             }
             else {
@@ -323,19 +358,20 @@ int firstPass(FILE *file, char *file_name, char *are_image, unsigned int *code_i
             current_command = second_word;
         else
             current_command = first_word;
+
         /* Set a pointer to the command and then set the operands to be the part of the string after current_command. */
         ptr = strstr(line, current_command);
         
         if (ptr != NULL) {
             operands = ptr + strlen(current_command); 
         }
-        /* Skip whitespace */
+        /* Skip whitespaces */
         while (*operands != '\0' && isspace((unsigned char) *operands))
             operands++;
         
         if (strcmp(current_command, ".data") == 0) {
             error_type = processData(operands, ic, dc, data_image, line_number, &error_flag);
-            if (error_type == -1) {
+            if (error_type == -1) { /* Fatal error */
                 freeSymbolList(*head);
                 return 1;
             }
@@ -343,13 +379,14 @@ int firstPass(FILE *file, char *file_name, char *are_image, unsigned int *code_i
                 continue;
             }
         }
-        else if (strcmp(current_command, ".entry") == 0) {
-            /* .entry is handled in the second pass */
+
+        /* .entry is handled in the second pass */        
+        else if (strcmp(current_command, ".entry") == 0)
             continue;
-        }
+        
         else if (strcmp(current_command, ".extern") == 0) {
             error_type = processExtern(head, &tail, &symbol, operands, line_number, &error_flag);
-            if (error_type == -1) {
+            if (error_type == -1) { /* Fatal error */
                 freeSymbolList(*head);
                 return 1;
             }
@@ -358,7 +395,7 @@ int firstPass(FILE *file, char *file_name, char *are_image, unsigned int *code_i
         }
         else if (strcmp(current_command, ".string") == 0) {
             error_type = processString(operands, ic, dc, data_image, line_number, &error_flag);
-            if (error_type == -1) {
+            if (error_type == -1) { /* Fatal error */
                 freeSymbolList(*head);
                 return 1;
             }
@@ -377,6 +414,7 @@ int firstPass(FILE *file, char *file_name, char *are_image, unsigned int *code_i
             }
         }
     }
+    /* The data block of the imaginary computer is after the code block. So add the ic to the value of every .data symbol. */
     current = *head;
     while (current != NULL) {
         if (current->is_data == 1)

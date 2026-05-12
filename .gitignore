@@ -1,9 +1,10 @@
 structs.h.gch
 *.as
-testers/
+testers/*
 *.am
 *.ob
 *.ent
 *.o
 *.ent
 *.ext
+.vscode/*

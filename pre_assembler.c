@@ -1,33 +1,39 @@
 #include "pre_assembler.h"
 
 /* Processes labels, .extern, and .entry to check for macro conflicts 
-   because the macro cannot have the same name as a symbol */
+   because the macro cannot have the same name as a symbol.
+   We do a basic processing because the symbol errors are meant to be checked in the first pass. */
 static int processPreAssemblerSymbol(char *first_word, char *second_word, int word_count, 
                               MacroNode *mac_head, SymbolNode **sym_head, SymbolNode **sym_tail, 
                               int line_number, int *error_flag) {
     char symbol_name[SYMBOL_NAME_MAX_LENGTH] = "";
     int is_symbol = 0;
 
+    /* If we are in an extern or entry declaration, the symbol name is in the second word */
     if ((strcmp(first_word, ".extern") == 0 || strcmp(first_word, ".entry") == 0) && word_count >= 2) {
         if (strlen(second_word) > SYMBOL_NAME_MAX_LENGTH - 2) {
             fprintf(stderr, "ERROR at line %d: Symbol name is longer than 31 characters.\n", line_number);
             *error_flag = 1;
             return 1;
         }
+        /* Copy the name of the symbol */
         strcpy(symbol_name, second_word);
         is_symbol = 1;
     }
+    /* If it's a label declaration */
     else if (strlen(first_word) > 1 && first_word[strlen(first_word) - 1] == ':') {
         if (strlen(first_word) > SYMBOL_NAME_MAX_LENGTH - 1) {
             fprintf(stderr, "ERROR at line %d: Symbol name is longer than 31 characters.\n", line_number);
             *error_flag = 1;
             return 1;
         }
+        /* Copy the name of the symbol */
         strcpy(symbol_name, first_word);
-        symbol_name[strlen(symbol_name) - 1] = '\0'; /* Chop off colon */
+        symbol_name[strlen(symbol_name) - 1] = '\0'; /* Chop off the colon */
+
         is_symbol = 1;
     }
-
+    /* If a symbol was found after the macro name */
     if (is_symbol == 1) {
         if (findMacro(symbol_name, mac_head) != NULL) {
             fprintf(stderr, "ERROR at line %d: A macro and symbol with identical names were found.\n", line_number);
@@ -42,47 +48,57 @@ static int processPreAssemblerSymbol(char *first_word, char *second_word, int wo
     return 0;
 }
 
-/* Safely allocates memory to add a new line of code to the current macro */
+/* Allocates memory to add a new line of code to the current macro. */
 static int addLineToMacro(MacroNode *macro, char *line, int line_number) {
+    /* Add the line number to the code */
     macro->code = realloc(macro->code, (macro->line_count + 1) * sizeof(char *));
     if (macro->code == NULL) {
         fprintf(stderr, "ERROR at line %d: Out of memory.\n", line_number);
-        return -1;
+        return -1; /* Fatal error */
     }
+
+    /* Add the line to the code. */
     macro->code[macro->line_count] = calloc(1, strlen(line) + 1);
     if (macro->code[macro->line_count] == NULL) {
         fprintf(stderr, "ERROR at line %d: Out of memory.\n", line_number);
-        return -1;
+        return -1; /* Fatal error */
     }
     strcpy(macro->code[macro->line_count], line);
     macro->line_count++;
+
     return 0;
 }
 
-/* 3. Validates the macro name and allocates the initial struct */
+/* Validates the macro name and allocates the initial struct */
 static int startMacroDefinition(char *macro_name, int macro_param_count, 
                          MacroNode **mac_head, MacroNode **mac_tail, SymbolNode *sym_head, 
                          int line_number, int *error_flag, MacroNode **current_macro) {
+    
+    /* If there is one parameter after the mcro command */
     if (macro_param_count == 1) {
+        /* Check the macro name. */
         if (isMacroValid(macro_name, *mac_head, sym_head, line_number) == 1) {
             *error_flag = 1;
             return 1;
         }
         
+        /* Create the macro node. */
         *current_macro = calloc(1, sizeof(MacroNode));
         if (*current_macro == NULL) {
             fprintf(stderr, "ERROR at line %d: Out of memory.\n", line_number);
-            return -1;
+            return -1; /* Fatal error */
         }
         
+        /* Set the name */
         (*current_macro)->name = calloc(1, strlen(macro_name) + 1);
         if ((*current_macro)->name == NULL) {
             fprintf(stderr, "ERROR at line %d: Out of memory.\n", line_number);
             free(*current_macro);
-            return -1;
+            return -1; /* Fatal error */
         }
-        
         strcpy((*current_macro)->name, macro_name);
+
+        /* Link the macro to the list.*/
         (*current_macro)->next = NULL;
 
         if (*mac_head == NULL) {
@@ -94,11 +110,13 @@ static int startMacroDefinition(char *macro_name, int macro_param_count,
         }
         return 0;
     }
+    /* If there is more than 1 parameter after the mcro command */
     else if (macro_param_count == 2) {
         fprintf(stderr, "ERROR at line %d: Too many parameters after mcro command.\n", line_number);
         *error_flag = 1;
         return 1;
     }
+    /* If there was no parameter after the mcro command */
     else {
         fprintf(stderr, "ERROR at line %d: No macro name given.\n", line_number);
         *error_flag = 1;
@@ -106,6 +124,13 @@ static int startMacroDefinition(char *macro_name, int macro_param_count,
     }
 }
 
+/**
+ * preAssembler
+ * This is the pre-assembler of the assembler. It expands macros and ommits the declarations from the output.
+ * @param file The .as file.
+ * @param file_name the filename of the .as file.
+ * @return 1 if there's an error, 0 if successful.
+ */
 int preAssembler(FILE *file, char *file_name) {
     char line[MAX_LINE_LENGTH] = "";
     char macro_name[MACRO_NAME_MAX_LENGTH] = "";

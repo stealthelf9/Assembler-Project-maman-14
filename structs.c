@@ -1,10 +1,10 @@
 #include "structs.h"
-
+/* We do not need for .data, .string, .entry or for .extern because when checking for the symbol or macro name, they can't start with a dot.*/
 const char *reserved_words[] = {"r0", "r1","r2","r3","r4","r5","r6","r7","mov","cmp","add","sub","lea","clr","not","inc","dec",
                         "jmp","bne","jsr","red","prn","rts","stop", "mcro", "mcroend"};
 
 /* Command list with their opcodes, functs, number of words and valid modes for source and destination. */
-Command command_table[16] = {
+const Command command_table[16] = {
     {"mov",  0,  0, 2, 11, 10},
     {"cmp",  1,  0, 2, 11, 11},
     {"add",  2, 10, 2, 11, 10},
