@@ -14,7 +14,6 @@ int isSymbolValid(char *symbol_name, SymbolNode *head, int line_number, int is_e
     int index = 0;
     int num_reserved_words = ARRAY_SIZE(reserved_words);
 
-    SymbolNode *node = head;
     SymbolNode *existing_symbol;
 
     /* Checks if the symbol starts with an english letter and has only numbers or letters inside the name. */
@@ -163,7 +162,6 @@ SymbolNode *setSymbol(char *symbol_name, SymbolNode **head, SymbolNode **tail, i
  * @param head The head of the symbol list.
  */
 void freeSymbolList(SymbolNode *head) {
-    int index;
     SymbolNode *node = head;
     SymbolNode *next_node;
 

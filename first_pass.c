@@ -311,7 +311,6 @@ int firstPass(FILE *file, char *file_name, char *are_image, unsigned int *code_i
     int in_label = 0;
     int line_number = 0;
     int symbol_validity = 1;
-    int word_count = 0;
 
     SymbolNode *symbol;
     SymbolNode *current;
@@ -321,7 +320,8 @@ int firstPass(FILE *file, char *file_name, char *are_image, unsigned int *code_i
         line_number++;
         in_label = 0;
 
-		word_count = sscanf(line, "%s %s %s %1s", first_word, second_word, third_word, extra);
+        /* Save the words */
+		sscanf(line, "%s %s %s %1s", first_word, second_word, third_word, extra);
         /* If it's a symbol declaration */
         if (strlen(first_word) > 1 && first_word[strlen(first_word) - 1] == ':') {
             first_word[strlen(first_word) - 1] = '\0'; /* Chop off the colon. */

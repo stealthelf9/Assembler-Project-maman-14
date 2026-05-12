@@ -14,7 +14,6 @@ int isMacroValid(char *macro_name, MacroNode *mac_head, SymbolNode *sym_head, in
     int index = 0;
     int num_reserved_words = ARRAY_SIZE(reserved_words);
 
-    MacroNode *node = mac_head;
     /* Check if the macro starts with an english letter and has only numbers, underscores or letters inside the name */
     if (!isalpha(macro_name[0])) {
         fprintf(stderr, "ERROR at line %d: Macro name must start with an English letter.\n", line_number);

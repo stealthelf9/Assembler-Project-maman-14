@@ -15,7 +15,6 @@ int main(int argc, char *argv[]) {
     /* Variables for the validity of the phases of the assembler. */
     int pre_assembler_val = 1;
     int first_pass_val = 1;
-    int second_pass_val = 1;
 
     int ic = IC_INIT_VALUE;
     int dc = 0;
@@ -26,6 +25,11 @@ int main(int argc, char *argv[]) {
 
     FILE *input;
 
+    if (argc < 2) {
+        fprintf(stderr, "ERROR: No input files provided.\nUsage: %s <file1> <file2> ...\n", argv[0]);
+        return 1;
+    }
+
     for (index = 1; index < argc; index++) {
         /* Reset everything for the next file. */
         file_name = argv[index];
@@ -33,6 +37,7 @@ int main(int argc, char *argv[]) {
         dc = 0;
         head = NULL;
 
+        fprintf(stdout, "%s\n", file_name);
         /* Append .as to the file name */
         sprintf(new_file_name, "%s.as", file_name);
         input = fopen(new_file_name, "r");
@@ -67,7 +72,7 @@ int main(int argc, char *argv[]) {
         /* Go back to reading the beginning of the file */
         rewind(input);
 
-        second_pass_val = secondPass(input, file_name, are_image, code_image, data_image, dc, head);
+        secondPass(input, file_name, are_image, code_image, data_image, dc, head);
         fclose(input);
     }
     return 0;
